@@ -1,0 +1,303 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tarena.dao.UserMapper">
+
+	<!-- namespace="com.tarena.dao.UserMapper 
+	定义的是全路径接口名 在UserMapper接口中有一个方法 public 
+		User findUserById(Integer id) 方法名对应的id ="findUserById" 
+		方法的参数Integer id 对应的parameterType="java.lang.Integer" 
+		方法的返回值User类型 对应 resultType="com.tarena.entity.User" -->
+	<sql id="select_id_alias">
+	    select id,username name,
+		userpassword password
+		from t_user
+	</sql>	
+	
+	<sql id="select_id">
+	    select id,username,
+		userpassword 
+		from t_user
+	</sql>	
+	<!-- resultMap标签解决了实体类的属性名跟结果集的列名字不匹配问题
+         一个resultMap节点中只能放置一个<id>节点,<id>代表的是主键
+    <id property="id" column="id"/>
+        property:对应的实体类中的主键属性,实际上是get和set方法
+        coloumn:对应的结果集中的列名字
+    <result property="name" column="username" />节点可以多个
+    
+     -->     
+	 
+	<resultMap type="User" id="user_map">
+	  <id property="id" column="id"/>
+	  <result property="name" column="username"/>
+	  <result property="password" column="userpassword"/>
+	</resultMap>
+	
+	
+	<select id="findUserById" resultType="User" parameterType="java.lang.Integer">
+		<include refid="select_id_alias"> </include>
+		where id = #{id}
+	</select>
+	
+	<select id="findUserByPage"  
+	        parameterType="Page"
+	        resultMap="user_map">
+	    <include refid="select_id"></include>
+	    where 
+	        username like #{userNameKeyword}
+	    and
+	        userpassword like #{userPasswordKeyword}
+	    limit 
+	       #{begin},#{pageSize}
+	</select>
+	
+	<select id="findUserByPage1"  
+	        parameterType="Page"
+	        resultMap="user_map" >
+	    <include refid="select_id"></include>
+	    where 
+	        username like #{userNameKeyword}
+	    and
+	        userpassword like #{userPasswordKeyword}
+	    limit 
+	       #{begin},#{pageSize}
+	</select>
+
+    <insert id="addUser"  
+	        parameterType="User"
+	        keyProperty="id"
+	        keyColumn="id"
+	        useGeneratedKeys="true">
+	   insert into t_user(username,userpassword) 
+	   values(#{name,javaType=string,jdbcType=VARCHAR},#{password})
+	
+	</insert>
+	
+	<update id="updateUser"
+	        parameterType="User">
+	     update t_user set
+	        username=#{name},
+	        userpassword=#{password}
+	     where
+	        id=#{id}
+	
+	</update>
+	
+	<delete id="deleteUser"
+	        parameterType="java.lang.Integer">
+	     delete from t_user where id=#{id}
+	     
+	</delete>
+	
+	<!-- 下面的都是用mapper映射器实现动态sql语句 -->
+	<!-- 
+	id="findUserBy_if" 对应的是com.tarena.UserMapper.findUserBy_if方法名
+	parameterType="User" 对应送入的参数类型
+	resultMap="user_map"> 对应结果映射
+	test="password != null"  password~~~~getPassword 对应paramenter="User" 里的getPassword方法
+	if条件password为null 就不拼装and userpassword=#{password}
+	 -->     
+	<select id="findUserBy_if"  
+	        parameterType="User"
+	        resultMap="user_map">
+	    <include refid="select_id"></include>
+	    where 
+	        username='cb'
+	    <if test="password!=null">
+	        and userpassword=#{password}
+	    </if>
+	</select>
+	
+	<select id="findUserBy_choose"  
+	        parameterType="User"
+	        resultMap="user_map">
+	    <include refid="select_id"></include>
+	    where 
+	        username='cb'
+	    <choose>
+	       <when test="password!=null">
+	         and userpassword=#{password}
+	       </when>
+	       <otherwise>
+	         and userpassword like '%a%'
+	       </otherwise>
+	    </choose>
+	</select>
+	
+	<!-- where 
+		如果第一个if条件不成立,第二个if条件也不成立 
+		  select * from t_user where  报错
+		如果第一个if条件不成立,第二个if条件成立 
+		  select * from t_user where and userpassword like #{upwd}   报错
+		如果第一个if条件成立,第二个if条件也成立 
+		  select * from t_user where  username like #{uname} and userpassword like #{upwd}  正确
+		如果第一个if条件成立,第二个if条件不成立
+		  select * from t_user where username like #{uname}  正确
+	-->
+	<select id="findUserBy_where_notag"  
+	        parameterType="map"
+	        resultMap="user_map">
+	    <include refid="select_id"></include>
+	    where 
+	    <if test="uname!=null">
+	       username like #{uname}
+	    </if>
+	    <if test="upwd!=null">
+	       and userpassword like #{upwd}
+	    </if>
+	</select>
+	
+	
+	<!-- where 
+		如果第一个if条件不成立,第二个if条件也不成立  mybatis会去掉where标签
+		  select * from t_user
+		如果第一个if条件不成立,第二个if条件成立  mybatis 会自动去掉and
+		  select * from t_user where  userpassword like #{upwd}   
+		如果第一个if条件成立,第二个if条件也成立 
+		  select * from t_user where  username like #{uname} and userpassword like #{upwd}  
+		如果第一个if条件成立,第二个if条件不成立
+		  select * from t_user where username like #{uname}  
+	-->      
+	<select id="findUserBy_where_havetag"  
+	        parameterType="map"
+	        resultMap="user_map">
+	    <include refid="select_id"></include>
+	    <where>
+	       <if test="uname!=null">
+	       username like #{uname}
+	       </if>
+	       <if test="upwd!=null">
+	       and userpassword like #{upwd}
+	       </if>
+	    </where> 
+	    
+	</select>
+	<!--set标签  -->
+	<update id="updateUserBy_Set"  
+	        parameterType="map"
+	        >
+	    update t_user
+	    <set>
+	       <if test="uname!=null">
+	         username=#{uname},
+	       </if>
+	       <if test="upwd!=null">
+	         userpassword=#{upwd}
+	       </if>
+	    </set>
+	    where id=#{uid}
+	</update>
+	
+	<!--trim等价where标签  -->
+	<select id="findUserBy_trim"  
+	        parameterType="User"
+	        resultMap="user_map">
+	    <include refid="select_id"></include>
+	    <trim prefix="where" prefixOverrides="and/or">
+	      <if test="name!=null">
+	       username like #{name}
+	       </if>
+	       <if test="password!=null">
+	       and userpassword like #{password}
+	       </if>
+	    </trim>
+	    
+	</select>
+	
+	<!--trim标签等价set标签   prefix前缀-->
+	<update id="updateUserBy_trim"  
+	        parameterType="User"
+	        >
+	    update t_user
+	    <trim prefix="set" suffixOverrides=",">
+	       <if test="name!=null">
+	       username=#{name},
+	       </if>
+	       <if test="password!=null">
+	       userpassword=#{password}
+	       </if>
+	    </trim>
+	    where id=#{id}
+	</update>
+	
+	<!-- foreach标签 
+	  item="id",相当于一个临时变量 对应循环体中的#{id}
+	  index="index",用来记录第几次循环  只能collection取值为list,array
+	  collection="list" 代表是一个list集合,此处取值可以有list,array,set,map
+	  open="(" separator="," close=")"
+	  类似(id,id,id,...)
+	-->
+	<select id="findUserBy_foreach"  
+	        parameterType="list"
+	        resultMap="user_map">
+	    <include refid="select_id"></include>
+	    where id in
+	    <foreach item="id" index="index" collection="list"
+          open="(" separator="," close=")">
+            #{id}
+        </foreach>
+	
+	</select>
+	
+	<resultMap type="User" id="userMap">
+	   <id property="id" column="id"/>
+	   <result property="name" column="username"/>
+	   <result property="password" column="userpassword"/>
+	   <association property="group" javaType="Group">
+	      <id property="id" column="gid"/>
+	      <result property="name" column="name"/>
+	      <result property="loc" column="loc"/>
+	   </association>
+	</resultMap>
+	<!--对一关联 多个用户归属一个组 -->
+	<select id="findUserBy_assocication"
+	        parameterType="java.lang.Integer"
+	        resultMap="userMap">
+	      select 
+	         u.id,
+	         u.username,
+	         u.userpassword,
+	         g.id gid,
+	         g.name,
+	         g.loc
+	      from t_user u
+	      left join t_group  g on u.group_id=g.id
+	      where u.id=#{id}
+	</select>
+	
+	
+	<resultMap type="Group" id="groupMap">
+	   <id property="id" column="id"/>
+	   <result property="name" column="name"/>
+	   <result property="loc" column="loc"/>
+	   <collection property="users" ofType="User" javaType="java.util.ArrayList">
+	       <id property="id" column="uid"/>
+	       <result property="name" column="username"/>
+	       <result property="password" column="userpassword"/> 
+	   </collection>
+	</resultMap>
+	<!--对多关联  一个组包含多个用户-->
+	<select id="findGroupBy_collection"
+	        parameterType="java.lang.Integer"
+	        resultMap="groupMap">
+	      select 
+	       g.id,
+	       g.name,
+	       g.loc,
+	       u.id uid,
+	       u.username,
+	       u.userpassword
+	      from t_group g left join t_user u on g.id=u.group_id
+	      where g.id=#{id}
+	</select>
+	
+	
+	
+	
+	
+	
+	
+	
+</mapper>

@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="x.y.z">
+	<select id="findUserById" 
+	     resultType="User"
+	     parameterType="java.lang.Integer">
+		select id,username name,
+		userpassword password
+		from t_user 
+		where id = #{id}
+	</select>
+	
+	<select id="findUserById1" 
+	     resultType="hashmap"
+	     parameterType="java.lang.Integer">
+		select id,username name,
+		userpassword password
+		from t_user 
+		where id = #{id}
+	</select>
+	
+	<select id="findUserByPage" resultType="com.tarena.entity.User"
+	        parameterType="com.tarena.vo.Page" >
+	    select 
+	         id,
+	         username name,
+	         userpassword password
+	    from t_user
+	    where 
+	        username like #{userNameKeyword}
+	    and
+	        userpassword like #{userPasswordKeyword}
+	    limit 
+	       #{begin},#{pageSize}
+	</select>
+	
+	
+	<select id="findUserByPage1" 
+	        resultType="hashmap"
+	        parameterType="com.tarena.vo.Page" >
+	    select 
+	         id,
+	         username name,
+	         userpassword password
+	    from t_user
+	    where 
+	        username like #{userNameKeyword}
+	    and
+	        userpassword like #{userPasswordKeyword}
+	    limit 
+	       #{begin},#{pageSize}
+	</select>
+	
+	<!--
+	         会根据parameterType中的值
+	    #{name}   name  ~~getName,getName是User类中的一个方法
+	   javaType代表是java的类型 string是mybatis的别名
+	   
+	   jdbcType代表的是数据库中的类型,VARCHAR是mybatis定义好的名称
+	   #{name,javaType=string,jdbcType=VARCHAR} 解决了java类型和数据库类型之间的匹配问题
+	   #{password}没有java类型和数据库类型对应匹配,默认匹配
+	   keyProperty=""
+       keyColumn=""
+       useGeneratedKeys=""
+	  -->
+	<insert id="addUser"  
+	        parameterType="User"
+	        keyProperty="id"
+	        keyColumn="id"
+	        useGeneratedKeys="true">
+	   insert into t_user(username,userpassword) 
+	   values(#{name,javaType=string,jdbcType=VARCHAR},#{password})
+	
+	</insert>
+	
+	<!-- 修改数据 
+	     #{name}  name~~~~getName 调用User类中的getName方法
+	     #{password}  password~~getPassword 
+	
+	-->
+	<update id="updateUser"
+	        parameterType="User">
+	     update t_user set
+	        username=#{name},
+	        userpassword=#{password}
+	     where
+	        id=#{id}
+	
+	</update>
+	
+	<delete id="deleteUser"
+	        parameterType="java.lang.Integer">
+	     delete from t_user where id=#{id}
+	     
+	</delete>
+	
+	
+	
+	
+	
+	
+	
+	
+	
+</mapper>
